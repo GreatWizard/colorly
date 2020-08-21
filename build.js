@@ -136,7 +136,7 @@ fs.readdir( dir, function( err, files ){
 
 
 		// write out the LESS book file
-		fs.writeFile( 'less/book-'+filename+'.less', "// "+filename+"\n"+records_less.join("\n") ); 
+		fs.writeFileSync( 'less/book-'+filename+'.less', "// "+filename+"\n"+records_less.join("\n")); 
 		console.log(' > less/book-'+filename+'.less created...');
 		
 
@@ -155,22 +155,22 @@ fs.readdir( dir, function( err, files ){
 
 
 	// write out the Sass book file
-	fs.writeFile( 'scss/_colorly.scss', files_scss.join("\n") );
+	fs.writeFileSync( 'scss/_colorly.scss', files_scss.join("\n") );
 	console.log(' > scss/_colorly.scss created...');
 
 
 	// write out the Stylus book file
-	fs.writeFile( 'stylus/colorly.styl', files_stylus.join("\n") );
+	fs.writeFileSync( 'stylus/colorly.styl', files_stylus.join("\n") );
 	console.log(' > stylus/colorly.styl created...');
 
 
 	// write out the LESS book file
-	fs.writeFile( 'less/colorly.less', files_less.join("\n") );
+	fs.writeFileSync( 'less/colorly.less', files_less.join("\n") );
 	console.log(' > less/colorly.less created...');
 
 
 	// write out the LESS book file
-	fs.writeFile( 'index.html', tpl_index.replace( "{{colors}}", files_index.join("\n") ) );
+	fs.writeFileSync( 'index.html', tpl_index.replace( "{{colors}}", files_index.join("\n") ) );
 	console.log(' > index.html created...');
 
 });
