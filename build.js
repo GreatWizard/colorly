@@ -2,26 +2,24 @@
 
 // we'll need filesystem functionality
 var fs = require('fs');
+var path = require('path');
 
 
 
 // template directory path, for DRY sake
-var dir_tpl = "_dev/";
+var dir_books = "./";
+var dir_tpl = "templates/";
 
 // set up a list of the files we'll create.
-var files = JSON.parse( fs.readFileSync( dir_tpl+"books.json", "utf8" ) );
+var files = JSON.parse( fs.readFileSync( dir_books+"books.json", "utf8" ) );
 var file_title = [];
 files.forEach(function( file_info ){
 	file_title[file_info.filename] = file_info.title;
 });
 
 // open the book template files
-var tpl_stylus = fs.readFileSync( dir_tpl+"book.styl", "utf8" );
-var tpl_scss = fs.readFileSync( dir_tpl+"book.scss", "utf8" );
-
-// open the index template files
-var tpl_index = fs.readFileSync( dir_tpl+"index.html", "utf8" );
-
+var tpl_stylus = fs.readFileSync( dir_tpl+"template.styl", "utf8" );
+var tpl_scss = fs.readFileSync( dir_tpl+"template.scss", "utf8" );
 
 
 // arrays for each index file
@@ -35,7 +33,28 @@ var files_stylus = [],
 // directory location
 var dir = 'json/';
 
+var copyDirSync = function(src, dest) {
+	var exists = fs.existsSync(src);
+	var stats = exists && fs.statSync(src);
+	var isDirectory = exists && stats.isDirectory();
+	if (isDirectory) {
+	  fs.mkdirSync(dest);
+	  fs.readdirSync(src).forEach(function(childItemName) {
+		copyDirSync(path.join(src, childItemName),
+				    path.join(dest, childItemName));
+	  });
+	} else {
+	  fs.copyFileSync(src, dest);
+	}
+  };
 
+fs.rmdirSync( 'dist' , { recursive: true })
+fs.mkdirSync( 'dist' )
+fs.mkdirSync( 'dist/csv' )
+fs.mkdirSync( 'dist/book' )
+fs.mkdirSync( 'dist/less' )
+fs.mkdirSync( 'dist/scss' )
+fs.mkdirSync( 'dist/stylus' )
 // loop through the directory
 fs.readdir( dir, function( err, files ){
 
@@ -59,7 +78,6 @@ fs.readdir( dir, function( err, files ){
 		var records_less = [];
 		var records_scss = [];
 		var records_html = [];
-		var records_index = [];
 
 
 		// start logging
@@ -91,18 +109,21 @@ fs.readdir( dir, function( err, files ){
 		});
 
 
-		// stylus files
+		// less files
 		files_less.push( "\n// " + file_title[filename] + '\n@import "book-'+filename+'.less";' );
 
-		// stylus files
+		// scss files
 		files_scss.push( "\n// " + file_title[filename] + '\n@import "book-'+filename+'";' );
 
 		// stylus files
 		files_stylus.push( "\n// " + file_title[filename] + '\n@import "book-'+filename+'.styl"' );
 
-		// stylus files
-		files_index.push( '<li><a rel="' + filename + '">' + file_title[filename] + ' <span>' + records.length + ' colors</span></a></li>' );
-
+		// db files
+		files_index.push({
+			id: filename,
+			title: file_title[filename],
+			records: records.length
+		});
 
 		// dump a color count for each book
 		console.log( " > Colors in File: " + records_csv.length );
@@ -110,34 +131,34 @@ fs.readdir( dir, function( err, files ){
 
 
 		// write out the csv file
-		fs.writeFileSync( "csv/"+filename+".csv", records_csv.join( "\n" ) );
-		console.log( " > csv/"+filename+".csv created..." );
+		fs.writeFileSync( "dist/csv/"+filename+".csv", records_csv.join( "\n" ) );
+		console.log( " > dist/csv/"+filename+".csv created..." );
 
 
 		// write out the index.html file
-		fs.writeFileSync( 'book/'+filename+'.html', records_html.join("\n") )
-		console.log(' > book/'+filename+'.html created...');
+		fs.writeFileSync( 'dist/book/'+filename+'.html', records_html.join("\n") )
+		console.log(' > dist/book/'+filename+'.html created...');
 
 
 		// write out the Sass book file
-		fs.writeFileSync( 'scss/_book-'+filename+'.scss', tpl_scss
+		fs.writeFileSync( 'dist/scss/_book-'+filename+'.scss', tpl_scss
 			.replace( "{{colors}}", records_scss.join(", ") )
 			.replace( /\{\{var_name\}\}/g, var_name )
 			.replace( "{{fn_name}}", filename ), 
-		console.log(' > scss/_book-' + filename + '.scss created...') );
+		console.log(' > dist/scss/_book-' + filename + '.scss created...') );
 
 
 		// write out the Stylus book file
-		fs.writeFileSync( 'stylus/book-'+filename+'.styl', tpl_stylus
+		fs.writeFileSync( 'dist/stylus/book-'+filename+'.styl', tpl_stylus
 			.replace( "{{colors}}", records_scss.join(" ") )
 			.replace( /\{\{var_name\}\}/g, var_name )
 			.replace( "{{fn_name}}", filename ) );
-		console.log(' > stylus/book-'+filename+'.styl created...');
+		console.log(' > dist/stylus/book-'+filename+'.styl created...');
 
 
 		// write out the LESS book file
-		fs.writeFileSync( 'less/book-'+filename+'.less', "// "+filename+"\n"+records_less.join("\n")); 
-		console.log(' > less/book-'+filename+'.less created...');
+		fs.writeFileSync( 'dist/less/book-'+filename+'.less', "// "+filename+"\n"+records_less.join("\n")); 
+		console.log(' > dist/less/book-'+filename+'.less created...');
 		
 
     });
@@ -155,23 +176,27 @@ fs.readdir( dir, function( err, files ){
 
 
 	// write out the Sass book file
-	fs.writeFileSync( 'scss/_colorly.scss', files_scss.join("\n") );
-	console.log(' > scss/_colorly.scss created...');
+	fs.writeFileSync( 'dist/scss/_colorly.scss', files_scss.join("\n") );
+	console.log(' > dist/scss/_colorly.scss created...');
 
 
 	// write out the Stylus book file
-	fs.writeFileSync( 'stylus/colorly.styl', files_stylus.join("\n") );
-	console.log(' > stylus/colorly.styl created...');
+	fs.writeFileSync( 'dist/stylus/colorly.styl', files_stylus.join("\n") );
+	console.log(' > dist/stylus/colorly.styl created...');
 
 
 	// write out the LESS book file
-	fs.writeFileSync( 'less/colorly.less', files_less.join("\n") );
-	console.log(' > less/colorly.less created...');
+	fs.writeFileSync( 'dist/less/colorly.less', files_less.join("\n") );
+	console.log(' > dist/less/colorly.less created...');
+
+	// copy JSON book file
+	copyDirSync( 'json/', 'dist/json/');
+	console.log(' > dist/json/colorly.json created...');
 
 
-	// write out the LESS book file
-	fs.writeFileSync( 'index.html', tpl_index.replace( "{{colors}}", files_index.join("\n") ) );
-	console.log(' > index.html created...');
+	// write out the DB file
+	fs.writeFileSync( 'dist/db.json', JSON.stringify(files_index));
+	console.log(' > dist/db.json created...');
 
 });
 
